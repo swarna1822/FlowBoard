@@ -40,7 +40,7 @@ const SideBarItems = ({ item }: Props) => {
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Icon fontSize="small" />
           </Box>
-          <Typography variant="body2" fontWeight={isActive ? 700 : 500}>
+          <Typography variant="body2" sx={{ fontWeight: isActive ? 700 : 500 }}>
             {item.label}
           </Typography>
         </Box>

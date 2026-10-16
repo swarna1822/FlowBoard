@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Autocomplete,
   Avatar,
   Badge,
   Box,
@@ -7,23 +8,39 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Paper,
   TextField,
   Typography,
 } from "@mui/material";
 import NotificationsNoneOutlined from "@mui/icons-material/NotificationsNoneOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../Redux/store";
-import { closeIssue, logout, openIssue, setCreateIssue } from "../../Redux/actions";
+import {
+  closeIssue,
+  logout,
+  openIssue,
+  setCreateIssue,
+  setProject,
+} from "../../Redux/actions";
 import { canEdit } from "../../Redux/selectors";
 import { issueKey } from "../../data/seed";
 import { useNavigate } from "react-router-dom";
 import { RouteNames } from "../../Utils/Routing";
+import type { Issue } from "../../types";
 
 const kindColor: Record<string, string> = {
   blocked: "#c9372c",
   overdue: "#e56910",
   mention: "#0c66e4",
+};
+
+const matchesQuery = (issue: Issue, query: string) => {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  return (
+    issue.summary.toLowerCase().includes(q) ||
+    issueKey(issue).toLowerCase().includes(q) ||
+    issue.description.toLowerCase().includes(q)
+  );
 };
 
 const TopBar = () => {
@@ -33,23 +50,24 @@ const TopBar = () => {
   const board = useSelector((state: RootState) => state.board);
   const editable = useSelector(canEdit);
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [notifEl, setNotifEl] = useState<HTMLElement | null>(null);
   const [userEl, setUserEl] = useState<HTMLElement | null>(null);
-
-  const hits = search.trim()
-    ? board.issues
-        .filter(
-          (issue) =>
-            issue.summary.toLowerCase().includes(search.toLowerCase()) ||
-            issueKey(issue).toLowerCase().includes(search.toLowerCase())
-        )
-        .slice(0, 6)
-    : [];
 
   const onLogout = () => {
     localStorage.removeItem("is_loggedIn");
     dispatch(logout());
     navigate(RouteNames.login);
+  };
+
+  const openFoundIssue = (issue: Issue) => {
+    setSearch("");
+    setSearchOpen(false);
+    if (issue.projectKey !== board.currentProject) {
+      dispatch(setProject(issue.projectKey));
+    }
+    dispatch(openIssue(issue.number));
+    navigate(RouteNames.board);
   };
 
   return (
@@ -65,12 +83,53 @@ const TopBar = () => {
         position: "relative",
       }}
     >
-      <TextField
+      <Autocomplete
         size="small"
-        placeholder="Search issues"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        sx={{ width: 240 }}
+        sx={{ width: 280 }}
+        options={board.issues}
+        value={null}
+        inputValue={search}
+        forcePopupIcon={false}
+        clearOnBlur={false}
+        open={searchOpen && search.trim().length > 0}
+        onOpen={() => setSearchOpen(true)}
+        onClose={(_, reason) => {
+          if (reason === "blur" || reason === "escape" || reason === "selectOption") {
+            setSearchOpen(false);
+          }
+        }}
+        slotProps={{
+          popper: { sx: { zIndex: 20 } },
+        }}
+        filterOptions={(options, state) =>
+          options.filter((issue) => matchesQuery(issue, state.inputValue)).slice(0, 8)
+        }
+        getOptionLabel={(issue) => `${issueKey(issue)} ${issue.summary}`}
+        isOptionEqualToValue={(option, value) =>
+          option.projectKey === value.projectKey && option.number === value.number
+        }
+        onInputChange={(_, value, reason) => {
+          if (reason === "reset") return;
+          setSearch(value);
+          setSearchOpen(value.trim().length > 0);
+        }}
+        onChange={(_, issue) => {
+          if (issue) openFoundIssue(issue);
+        }}
+        noOptionsText={search.trim() ? "No issues found" : "Type to search issues"}
+        renderOption={(props, issue) => {
+          const { key, ...optionProps } = props;
+          return (
+            <Box component="li" key={key} {...optionProps}>
+              <Typography variant="body2">
+                {issueKey(issue)} · {issue.summary}
+              </Typography>
+            </Box>
+          );
+        }}
+        renderInput={(params) => (
+          <TextField {...params} placeholder="Search issues" />
+        )}
       />
       <Button
         variant="contained"
@@ -96,38 +155,11 @@ const TopBar = () => {
         {user?.initials ?? "AK"}
       </Avatar>
 
-      {hits.length > 0 && (
-        <Paper
-          sx={{
-            position: "absolute",
-            left: 16,
-            top: 52,
-            width: 360,
-            zIndex: 8,
-            p: 0.5,
-          }}
-        >
-          {hits.map((issue) => (
-            <MenuItem
-              key={issueKey(issue)}
-              onClick={() => {
-                setSearch("");
-                dispatch(openIssue(issue.number));
-              }}
-            >
-              <Typography variant="body2">
-                {issueKey(issue)} · {issue.summary}
-              </Typography>
-            </MenuItem>
-          ))}
-        </Paper>
-      )}
-
       <Menu anchorEl={notifEl} open={Boolean(notifEl)} onClose={() => setNotifEl(null)}>
         {board.notifications.map((item) => (
           <MenuItem key={item.id} onClick={() => setNotifEl(null)}>
             <Box>
-              <Typography variant="body2" fontWeight={700} sx={{ color: kindColor[item.kind] }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: kindColor[item.kind] }}>
                 {item.title}
               </Typography>
               <Typography variant="caption" color="text.secondary">

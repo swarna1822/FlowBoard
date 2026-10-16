@@ -285,7 +285,7 @@ export const boardReducer = (
   state: BoardState = load(),
   action: BoardAction | { type: string }
 ): BoardState => {
-  const next = nextState(state, action);
+  const next = nextState(state, action as BoardAction);
   if (next !== state) persist(next);
   return next;
 };

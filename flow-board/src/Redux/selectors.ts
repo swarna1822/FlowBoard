@@ -1,12 +1,14 @@
 import { isOverdue } from "../data/seed";
+import type { ProjectRole } from "../types";
 import type { RootState } from "./store";
 
 export const currentColumns = (state: RootState) =>
   state.board.columns[state.board.currentProject] ?? [];
 
-export const projectRole = (state: RootState) => {
+export const projectRole = (state: RootState): ProjectRole | "No access" => {
   const personId = state.auth.user?.personId ?? "AK";
-  return state.board.members[state.board.currentProject]?.[personId] ?? "No access";
+  const role = state.board.members[state.board.currentProject]?.[personId];
+  return role ?? "No access";
 };
 
 export const canManage = (state: RootState) => {

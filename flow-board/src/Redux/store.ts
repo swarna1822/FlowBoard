@@ -1,4 +1,4 @@
-import { combineReducers, createStore } from "redux";
+import { combineReducers, createStore, type StoreEnhancer } from "redux";
 import { AuthReducer } from "./Authreducer";
 import { boardReducer } from "./boardReducer";
 
@@ -9,7 +9,8 @@ const rootReducer = combineReducers({
 
 export type RootState = ReturnType<typeof rootReducer>;
 
-const devTools = (window as Window & { __REDUX_DEVTOOLS_EXTENSION__?: () => unknown })
-  .__REDUX_DEVTOOLS_EXTENSION__?.();
+const enhancer = (
+  window as Window & { __REDUX_DEVTOOLS_EXTENSION__?: () => StoreEnhancer }
+).__REDUX_DEVTOOLS_EXTENSION__?.();
 
-export const store = createStore(rootReducer, devTools);
+export const store = createStore(rootReducer, enhancer);

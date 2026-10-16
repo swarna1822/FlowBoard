@@ -90,7 +90,7 @@ const CreateProjectDialog = () => {
           placeholder="CP"
           fullWidth
           margin="dense"
-          inputProps={{ maxLength: 4 }}
+          slotProps={{ htmlInput: { maxLength: 4 } }}
           value={key}
           onChange={(event) => setKey(event.target.value.toUpperCase())}
         />
