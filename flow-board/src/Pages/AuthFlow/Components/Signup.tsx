@@ -84,7 +84,7 @@ const Signup = () => {
         elevation={2}
         sx={{
           width: "100%",
-          maxWidth: 360,
+          maxWidth: 380,
           p: { xs: 3, sm: 5 },
           border: "1px solid #e2e8f0",
           borderRadius: 4,
